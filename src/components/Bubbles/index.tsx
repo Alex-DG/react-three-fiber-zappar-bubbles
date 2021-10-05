@@ -127,7 +127,7 @@ const Bubbles = ({ camera, texture }: BubblesProps) => {
     camera && env.update(gl, camera)
 
     bubbleRef?.current.forEach((bubble, index) => {
-      if (bubble?.position) {
+      if (bubble?.position && data?.current[index]) {
         const props = data.current[index]
         const targetY = positions[index]?.y
 
