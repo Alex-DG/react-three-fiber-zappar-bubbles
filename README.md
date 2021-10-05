@@ -7,7 +7,7 @@ To learn more about Zappar for React-Three-Fiber, head over to the [Zappar for R
 
 ## Project description
 
-​Bubbles falling on the user's face and absorbed through the skin.
+​Bubbles falling on the user's face and absorbed through the skin. [Demo](https://react-three-fiber-zappar-bubbles.vercel.app/)
 
 ## Running the Project
 
