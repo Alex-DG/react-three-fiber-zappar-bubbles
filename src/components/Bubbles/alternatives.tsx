@@ -1,36 +1,83 @@
+import { useRef, useEffect } from 'react'
+
 import * as THREE from 'three'
 import { useLoader } from '@react-three/fiber'
-
-import { Instance, Instances } from '@react-three/drei'
+import { Types } from '@zappar/zappar-react-three-fiber'
 
 import bubbleMapSrc from '../../assets/bubbleFalling.png'
 
-type Position = { x: number; y: number; z: number }
+import positions from '../../config/data/bubblePositions'
 
 type Props = {
-  count?: number
+  trackerGroup: React.MutableRefObject<Types.FaceAnchorGroup | undefined>
+}
+
+type BubbleData = {
+  ready: boolean
+  scale: number
+  velocity: THREE.Vector2
+  position: THREE.Vector3
 }
 
 /**
- * Alternatives solution to `index.tsx`
- * using drei.
- *
- * Results:
- *  - in terms of line of code, shorter
- *  - no need of extra logic: ref, useEffect
+ * Alternative solution:
+ *  - solution without drei Instances/Instance not sure yet how to access each child within
+ * the InstancedMesh to update their falling speed individually
  */
-const Bubbles = ({ count }: Props) => {
-  const bubbleCount = count || 5
+const Bubbles = ({ trackerGroup }: Props) => {
+  const bubbleCount = positions.length
 
-  const positions: Position[] = [
-    { x: 0, y: 0, z: 1 },
-    { x: 0, y: 0.2, z: 1 },
-    { x: 0.2, y: 0, z: 1 },
-    { x: -0.2, y: 0, z: 1 },
-    { x: 0, y: -0.2, z: 1 },
-  ]
+  const groupRef = useRef<THREE.Group>()
+  const instancedMeshRef = useRef<THREE.InstancedMesh>()
+  const bubbleData = useRef<BubbleData[]>([]) // used to store initial values
 
-  const scale = 0.2
+  /**
+   * Generate bubbles
+   */
+  useEffect(() => {
+    const pixelRatio = Math.min(window.devicePixelRatio, 2)
+
+    if (instancedMeshRef?.current && groupRef?.current) {
+      for (let i = 0; i < bubbleCount; i++) {
+        const temp = new THREE.Object3D()
+        const id = i
+
+        let data = {
+          ready: false,
+          scale: 0,
+          velocity: new THREE.Vector2(),
+          position: new THREE.Vector3(),
+        }
+
+        // ::: Set velocity :::
+        data.velocity.set(
+          Math.floor(Math.random() * 6 - 3) * 0.1,
+          Math.floor(Math.random() * 10 + 5) * -0.05
+        )
+
+        // ::: Set scale :::
+        const scale = pixelRatio * positions[i].scale * 0.32
+        temp.scale.set(scale, scale, scale)
+        data.scale = scale
+
+        // ::: Set position :::
+        const x = positions[i].x
+        const y = Math.random() * (3.5 - 1.5) + 1.3
+        const z = Math.random() * (0.4 - 0.05) + 0.05
+        temp.position.set(x, y, z)
+        temp.updateMatrix()
+        data.position.set(x, y, z)
+
+        instancedMeshRef.current.setMatrixAt(id, temp.matrix)
+        bubbleData.current.push(data)
+      }
+
+      trackerGroup.current?.add(groupRef.current)
+
+      // Update the instance
+      instancedMeshRef.current.instanceMatrix.needsUpdate = true
+    }
+  }, [bubbleCount, instancedMeshRef, trackerGroup])
 
   const Bubble = () => {
     const bubbleMapTexture = useLoader(THREE.TextureLoader, bubbleMapSrc)
@@ -42,7 +89,7 @@ const Bubbles = ({ count }: Props) => {
 
     return (
       <>
-        <planeGeometry />
+        <planeGeometry args={[1, 1]} />
 
         <meshPhongMaterial
           {...{ color, specular, opacity, shininess }}
@@ -57,16 +104,17 @@ const Bubbles = ({ count }: Props) => {
     )
   }
 
-  return (
-    <>
-      <Instances>
-        <Bubble />
+  // useFrame((_, dt) => {})
 
-        {positions.map(({ x, y, z }, i) => (
-          <Instance {...{ scale }} position={[x, y, z]} />
-        ))}
-      </Instances>
-    </>
+  return (
+    <group ref={groupRef}>
+      <instancedMesh
+        ref={instancedMeshRef}
+        args={[undefined, undefined, bubbleCount]}
+      >
+        <Bubble />
+      </instancedMesh>
+    </group>
   )
 }
 

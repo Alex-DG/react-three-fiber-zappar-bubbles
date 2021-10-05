@@ -7,20 +7,24 @@ import {
   Types,
 } from '@zappar/zappar-react-three-fiber'
 
-// import Face from './components/Face'
-import Bubbles from './components/Bubbles'
-import Lights from './components/Lights'
+import Face from '../components/Face'
+import Bubbles from '../components/Bubbles'
+import Lights from '../components/Lights'
 
-function App() {
+const App = () => {
+  const camRef = useRef<Types.Camera>()
   const trackerGroup = useRef<Types.FaceAnchorGroup>()
+
+  const showMask = false
 
   return (
     <ZapparCanvas>
-      <ZapparCamera userFacing rearCameraMirrorMode="css" />
+      <ZapparCamera ref={camRef} userFacing rearCameraMirrorMode="css" />
 
       <FaceTracker ref={trackerGroup as any}>
         <Suspense fallback={null}>
-          <Bubbles />
+          {showMask && <Face {...{ trackerGroup }} />}
+          <Bubbles camera={camRef.current} texture />
         </Suspense>
       </FaceTracker>
 
